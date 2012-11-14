@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<!-- 
+-->
+<routes>
+   <vType id="vtype0" accel="5.6" decel="4.5" sigma="0" length="3" minGap="5" maxSpeed="50" departSpeed="max"/>
+   <vType id="vtype1" accel="0.6" decel="4.5" sigma="1" length="3" minGap="10" maxSpeed="50" departSpeed="random"/>
+   <route id="Ber-Mid-Cent" color="1,1,0" edges="8943342#3 8958347#0 164011280#1 92191995 -92191995 92191998#0 8925133 30037246#3 38085370"/>
+   
+   <flow id="flow0" type="vtype0" route="Ber-Mid-Cent" begin="0" period="1" number="4" departLane="0"/>
+   <!--
+   <flow id="flow1" type="vtype1" route="route3westbound_m" begin="0" period="10" number="5" departSpeed="random" departLane="random"/>
+   <flow id="flow2" type="vtype0" route="route3westbound" begin="1" period="10" number="5" departSpeed="random" departLane="random"/>
+        
+   -->
+</routes>
+

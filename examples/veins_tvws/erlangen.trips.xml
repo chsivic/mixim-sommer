@@ -1,0 +1,5 @@
+<!-- duarouter --trip-files erlangen.trips.xml --net-file erlangen.net.xml --output-file result.rou.xml -->
+<trips>
+    <tripdef depart="1" from="4319352#0" to="31982182#0"/>
+    <tripdef depart="1" from="85355911#0" to="30350450#2"/>
+</trips>

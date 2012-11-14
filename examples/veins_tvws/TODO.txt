@@ -1,0 +1,27 @@
+1) Implement RL-based channel selection in Mac1609_4 module, which is responsible for multi-channel operation of WAVE
+	1) Implement SCH switching protocol in a car group
+		1) Mac1609_4 sends control msg up to APP indicating a better channel available
+			1) new message kind in SiChenMac1609_4 (DONE)
+			2) send control msg up every 100ms if "better channel found" (DONE)
+			3) APP handleLowerControl desides whether to perform SCH switching (LATER)
+		2) APP sends msg to following cas' APP requesting switching SCH (DONE)
+			1) get better channel number from Mac1609_4 (DONE)
+			2) write new channel number in serial for temporary solution (DONE)
+			3) once received any ACK from following cars, switch to SCH (DONE)
+		3) The following car's APP responds with ACK to the leader's APP (DONE)
+			1) Immediately switch SCH and, just for now, don't care about other following cars (DONE)
+			2) or just don't reply (DONE)
+	2) Implement exploitation and exploration. should the following car perform exploration too? no (DONE)
+		1) leading car performing all the learning and announce channel for all cars (DONE)
+	3) The current 802.11p implemented doesn't support ACK, but only broadcast short message. csma has it, 
+		but doesn't have EDCA. I don't need EDCA, but need ACK. The implementation of .11p also pushed 
+		some mac function to 1609, making .11p an incomplete layer. (LATER)
+		1) some processings can be moved from 1609 to .11p, make 802.11p replacable by csma.h (LATER)
+	4) the back off procedure is wrong!!! causing lots of collision under high traffic intensity
+		1) fix it. otherwise cannot show the effect of WLANs on relay msg reception rate
+		2) temporarily, add backoff in APP layer.. (DONE)
+2) Calculate relay packet correct reception rate
+3) Add statistic in TrafficGen counting sent messages
+4) Implement CBR
+	1) save channel values on a channel-location matrix (DONE)
+	2) load from file channel value at the beginning of trip (DONE)

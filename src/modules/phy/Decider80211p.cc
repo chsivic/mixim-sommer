@@ -496,6 +496,13 @@ void Decider80211p::changeFrequency(double freq) {
 	centerFrequency = freq;
 }
 
+void Decider80211p::channelChanged(int newChannel) {
+    assert(1 <= currentChannel);
+    currentChannel = newChannel;
+    centerFrequency = CENTER_FREQUENCIES[currentChannel];
+    channelStateChanged();
+}
+
 void Decider80211p::finish() {
 	simtime_t totalTime = simTime() - myStartTime;
 	phy->recordScalar("busyTime", myBusyTime / totalTime.dbl());

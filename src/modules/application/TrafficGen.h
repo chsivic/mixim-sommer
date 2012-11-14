@@ -58,12 +58,21 @@ protected:
 
 	/** @brief Tracks the number of packets dropped so far.*/
 	long nbPacketDropped;
+	long nbPacketReceived;
+	long nbPacketGenerated;
 
 	/** @brief Timer message to schedule next packet send.*/
 	cMessage *delayTimer;
 
 	/** @brief Pointer to world utility module.*/
 	BaseWorldUtility* world;
+
+	// signal ID for received packets
+	simsignal_t receivedSignalId;
+
+	// if use poisson arrival, mu is the mean arrival time of bursts
+	bool usePoissonArrival;
+	double mu;
 
 public:
 	virtual ~TrafficGen();

@@ -30,8 +30,12 @@ simple TrafficGen like IBaseApplLayer
         bool debug = default(false); // debug switch
         int burstSize = default(1);
         int headerLength @unit(bit);
+		
+		bool usePoissonArrival = default(true);
+		volatile double mu @unit(s)= default(exponential(0.05s)); // for poisson arrival with inter arrival of exponential(mu) for bursts
+
     gates:
-    	input lowerLayerIn; // from lower
+        input lowerLayerIn; // from lower
         output lowerLayerOut; // to lower
         input lowerControlIn; // control from lower
         output lowerControlOut; // control to lower

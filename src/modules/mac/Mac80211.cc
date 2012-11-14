@@ -83,7 +83,7 @@ void Mac80211::initialize(int stage)
             	      "Please adjust your omnetpp.ini file accordingly.");
 
     	int channel = phy->getCurrentRadioChannel();
-    	if(!(1<=channel && channel<=14)) {
+    	if(!(1<=channel && channel<=14) && !(149<=channel && channel<=184) ) {
     		opp_error("Radio set to invalid channel %d. Please make sure the"
     				  " phy modules parameter \"initialRadioChannel\" is set to"
     				  " a valid 802.11 channel (1 to 14)!", channel);
@@ -149,7 +149,8 @@ void Mac80211::handleUpperMsg(cMessage *msg)
 {
 	cPacket* pkt = static_cast<cPacket*>(msg);
 
-	debugEV << "Mac80211::handleUpperMsg " << msg->getName() << "\n";
+	debugEV << "Mac80211::handleUpperMsg " << msg->getName()
+                   << ". Now queue length is " << fromUpperLayer.size() << "\n";
     if (pkt->getBitLength() > 18496){
         error("packet from higher layer (%s)%s is too long for 802.11b, %d bytes (fragmentation is not supported yet)",
               pkt->getClassName(), pkt->getName(), pkt->getByteLength());
@@ -160,6 +161,12 @@ void Mac80211::handleUpperMsg(cMessage *msg)
         msg->setName("MAC ERROR");
         msg->setKind(PACKET_DROPPED);
         sendControlUp(msg);
+
+        // emit signal on dropped packets for statistics
+        droppedPacket.setReason(DroppedPacket::QUEUE);
+//        emit(BaseLayer::catDroppedPacketSignal, &droppedPacket); // for listener approach statistics
+        emit(BaseLayer::catDroppedPacketSignal, DroppedPacket::QUEUE); // for @statistic approach
+
         debugEV << "packet " << msg << " received from higher layer but MAC queue is full, signalling error\n";
         return;
     }
@@ -1017,6 +1024,11 @@ void Mac80211::testMaxAttempts()
         temp->setName("MAC ERROR");
         temp->setKind(PACKET_DROPPED);
         sendControlUp(temp);
+
+        // emit signal on dropped packets for statistics
+        droppedPacket.setReason(DroppedPacket::RETRIES);
+//        emit(BaseLayer::catDroppedPacketSignal, &droppedPacket);
+        emit(BaseLayer::catDroppedPacketSignal, DroppedPacket::RETRIES);
     }
 }
 

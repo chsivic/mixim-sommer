@@ -325,6 +325,7 @@ bool BaseConnectionManager::registerNic(cModule* nic,
 
 bool BaseConnectionManager::unregisterNic(cModule* nicModule)
 {
+    if (nicModule == 0) return false;
 	assert(nicModule != 0);
 
 	// find nicEntry

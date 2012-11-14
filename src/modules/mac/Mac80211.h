@@ -27,6 +27,7 @@
 #include "BaseMacLayer.h"
 #include "Consts80211.h"
 #include "Mac80211Pkt_m.h"
+#include <DroppedPacket.h>
 
 class ChannelSenseRequest;
 
@@ -62,6 +63,9 @@ protected:
       TIMEOUT,
       NAV
     };
+
+    /** @brief Inspect reasons for dropped packets */
+    DroppedPacket droppedPacket;
 
     /** Definition of the states*/
     enum State {

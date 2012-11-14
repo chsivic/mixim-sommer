@@ -24,8 +24,10 @@
 
 #include <BaseDecider.h>
 #include <Consts80211p.h>
+#include <Consts80211.h>
 #include <Mac80211pToPhy11pInterface.h>
 #include <Decider80211pToPhy80211pInterface.h>
+#include <BasePhyLayer.h>
 
 #ifndef DBG_D11P
 #define DBG_D11P EV
@@ -61,6 +63,8 @@ class Decider80211p: public BaseDecider {
 		/** @brief The center frequency on which the decider listens for signals */
 		double centerFrequency;
 
+		int currentChannel;
+
 		double myBusyTime;
 		double myStartTime;
 
@@ -68,7 +72,7 @@ class Decider80211p: public BaseDecider {
 		AirFrame *curSyncFrame;
 
 		std::string myPath;
-		Decider80211pToPhy80211pInterface* phy11p;
+		BasePhyLayer* phy11p;
 		std::map<AirFrame*,int> signalStates;
 
 		/** @brief enable/disable statistics collection for collisions
@@ -161,19 +165,20 @@ class Decider80211p: public BaseDecider {
 		 */
 		Decider80211p(DeciderToPhyInterface* phy,
 		              double sensitivity,
-		              double centerFrequency,
+		              int currentChannel,
 		              int myIndex = -1,
 		              bool collectCollisionStatistics = false,
 		              bool debug = false):
 			BaseDecider(phy, sensitivity, myIndex, debug),
-			centerFrequency(centerFrequency),
+			centerFrequency(CENTER_FREQUENCIES[currentChannel]),
 			myBusyTime(0),
 			myStartTime(simTime().dbl()),
 			curSyncFrame(0),
 			collectCollisionStats(collectCollisionStatistics),
 			collisions(0) {
-			phy11p = dynamic_cast<Decider80211pToPhy80211pInterface*>(phy);
+			phy11p = dynamic_cast<BasePhyLayer*>(phy);
 			assert(phy11p);
+			this->currentChannel = currentChannel;
 
 		}
 
@@ -185,6 +190,7 @@ class Decider80211p: public BaseDecider {
 		int getSignalState(AirFrame* frame);
 		virtual ~Decider80211p();
 
+		void channelChanged(int);
 		void changeFrequency(double freq);
 
 		void setChannelIdleStatus(bool isIdle);

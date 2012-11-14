@@ -30,6 +30,9 @@ void TrafficGen::initialize(int stage)
 {
 	BaseApplLayer::initialize(stage);
 
+	// Initialize signal with  name "received"
+	receivedSignalId = registerSignal("received");
+
 	if(stage == 0) {
 		world           = FindModule<BaseWorldUtility*>::findGlobalModule();
 		delayTimer      = new cMessage("delay-timer", SEND_PACKET_TIMER);
@@ -38,11 +41,21 @@ void TrafficGen::initialize(int stage)
 		pppt            = par("packetsPerPacketTime");
 		burstSize       = par("burstSize");
 
+		usePoissonArrival = par("usePoissonArrival");
+		mu              = par("mu");
+
 		nbPacketDropped = 0;
+		nbPacketReceived = 0;
+		nbPacketGenerated = 0;
 	} else if (stage == 1) {
 		if(burstSize > 0) {
 			remainingBurst = burstSize;
-			scheduleAt(dblrand() * packetTime * burstSize / pppt, delayTimer);
+
+            if (usePoissonArrival) {
+                scheduleAt(exponential(mu), delayTimer);
+            } else {
+                scheduleAt(dblrand() * packetTime * burstSize / pppt, delayTimer);
+            }
 		}
 	} else {
 
@@ -55,7 +68,9 @@ TrafficGen::~TrafficGen() {
 
 void TrafficGen::finish()
 {
-	recordScalar("dropped", nbPacketDropped);
+//	recordScalar("dropped", nbPacketDropped);
+//    recordScalar("Received", nbPacketReceived);
+//    recordScalar("Generaed", nbPacketGenerated);
 }
 
 void TrafficGen::handleSelfMsg(cMessage *msg)
@@ -65,14 +80,17 @@ void TrafficGen::handleSelfMsg(cMessage *msg)
 	case SEND_PACKET_TIMER:
 		assert(msg == delayTimer);
 
-
 		sendBroadcast();
 
 		remainingBurst--;
 
 		if(remainingBurst == 0) {
 			remainingBurst = burstSize;
-			scheduleAt(simTime() + (dblrand()*1.4+0.3)*packetTime * burstSize / pppt, msg);
+            if (usePoissonArrival) {
+                scheduleAt(simTime() + exponential(par("mu").doubleValue()), msg);
+            } else {
+                scheduleAt(simTime() + (dblrand()*1.4+0.3)*packetTime * burstSize / pppt, msg);
+            }
 		} else {
 			scheduleAt(simTime() + packetTime * 2, msg);
 		}
@@ -89,8 +107,14 @@ void TrafficGen::handleSelfMsg(cMessage *msg)
 void TrafficGen::handleLowerMsg(cMessage *msg)
 {
 	cPacket* pkt = static_cast<cPacket*>(msg);
+
 	Packet p(pkt->getBitLength(), 1, 0);
+	p.setPacketSent(false);
 	emit(BaseLayer::catPacketSignal, &p);
+
+	emit(receivedSignalId, msg->getControlInfo()->getName());
+
+	nbPacketReceived++;
 
 	delete msg;
 	msg = 0;
@@ -111,5 +135,10 @@ void TrafficGen::sendBroadcast()
 
 	debugEV << "Sending broadcast packet!" << endl;
 	sendDown( pkt );
+
+	nbPacketGenerated++;
+
+	Packet p(pkt->getBitLength(), 0, 1);
+	emit(BaseLayer::catPacketSignal, &p);
 }
 

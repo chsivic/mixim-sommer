@@ -59,10 +59,12 @@ void BaseWaveApplLayer::initialize(int stage) {
 	}
 }
 
-WaveShortMessage*  BaseWaveApplLayer::prepareWSM(std::string name, int lengthBits, t_channel channel, int priority, int rcvId, int serial) {
-	WaveShortMessage* wsm =		new WaveShortMessage(name.c_str());
+WaveShortMessage* BaseWaveApplLayer::prepareWSM(std::string name,
+        int dataLengthBits, t_channel channel, int priority, int rcvId,
+        int serial, int kind/*=0*/) {
+	WaveShortMessage* wsm =		new WaveShortMessage(name.c_str(), kind);
 	wsm->addBitLength(headerLength);
-	wsm->addBitLength(lengthBits);
+	wsm->addBitLength(dataLengthBits);
 
 	switch (channel) {
 		case type_SCH: wsm->setChannelNumber(Channels::SCH1); break; //will be rewritten at Mac1609_4 to actual Service Channel. This is just so no controlInfo is needed

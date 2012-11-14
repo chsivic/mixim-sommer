@@ -20,6 +20,7 @@ package org.mixim.modules.nic;
 
 import org.mixim.modules.mac.Mac80211;
 import org.mixim.modules.phy.PhyLayer;
+import org.mixim.modules.phy.PhyLayerWithSignals;
 
 //
 // This NIC implements an 802.11 network interface card.
@@ -31,7 +32,8 @@ module Nic80211 extends WirelessNic
 {
     parameters:
     	@display("i=block/ifcard");
-    	macType = "Mac80211";
+    	macType = "Mac80211MultiChannel";
+    	phyType = "PhyLayerWithSignals";
     	
     	mac.queueLength = default(20);
         mac.bitrate     = default(2E+6bps);            

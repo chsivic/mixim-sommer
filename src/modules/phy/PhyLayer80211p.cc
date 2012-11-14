@@ -343,8 +343,8 @@ AnalogueModel* PhyLayer80211p::initializeSimpleObstacleShadowing(ParameterMap& p
 }
 
 Decider* PhyLayer80211p::initializeDecider80211p(ParameterMap& params) {
-	double centerFreq = params["centerFrequency"];
-	Decider80211p* dec = new Decider80211p(this, sensitivity, centerFreq, findHost()->getIndex(), coreDebug);
+//	double centerFreq = params["centerFrequency"];
+	Decider80211p* dec = new Decider80211p(this, sensitivity, this->radio->getCurrentChannel(), findHost()->getIndex(), coreDebug);
 	dec->setPath(getParentModule()->getFullPath());
 	return dec;
 }

@@ -20,20 +20,15 @@
 
 package org.mixim.modules.nic;
 
-import org.mixim.modules.phy.PhyLayer80211p;
-import org.mixim.modules.mac.ieee80211p.Mac1609_4;
+import org.mixim.modules.phy.PhyLayerWithSignals;
+import org.mixim.modules.mac.ieee80211p.SiChenMac1609_4;
 
-//
-// This NIC implements an 802.11p network interface card.
-//
-// @author David Eckhoff
-//
-// @see BaseWaveApplLayer
-// @see Mac1609_4
-// @see PhyLayer80211p
-//
+
 module Nic80211p
 {
+    parameters:
+        string connectionManagerName = default("");   //name of the ConnectionManager module
+
     gates:
         input upperLayerIn; // to upper layers
         output upperLayerOut; // from upper layers
@@ -42,28 +37,28 @@ module Nic80211p
         input radioIn; // radioIn gate for sendDirect
 
     submodules:
-        phy80211p: PhyLayer80211p {
+        phy: PhyLayerWithSignals {
             @display("p=69,218;i=block/process_s");
         }
 
-        mac1609_4: Mac1609_4 {
+        mac: SiChenMac1609_4 {
             @display("p=69,82");
         }
 
     connections:
 
-        radioIn --> phy80211p.radioIn;
+        radioIn --> phy.radioIn;
 
-        mac1609_4.lowerControlOut --> phy80211p.upperControlIn;
-        mac1609_4.lowerLayerOut --> phy80211p.upperLayerIn;
-        phy80211p.upperLayerOut --> mac1609_4.lowerLayerIn;
-        phy80211p.upperControlOut --> mac1609_4.lowerControlIn;
+        mac.lowerControlOut --> phy.upperControlIn;
+        mac.lowerLayerOut --> phy.upperLayerIn;
+        phy.upperLayerOut --> mac.lowerLayerIn;
+        phy.upperControlOut --> mac.lowerControlIn;
         
-        mac1609_4.upperControlIn <-- upperControlIn;
-        mac1609_4.upperLayerIn <-- upperLayerIn;
+        mac.upperControlIn <-- upperControlIn;
+        mac.upperLayerIn <-- upperLayerIn;
 
-        mac1609_4.upperLayerOut --> upperLayerOut;
-        mac1609_4.upperControlOut --> upperControlOut;
+        mac.upperLayerOut --> upperLayerOut;
+        mac.upperControlOut --> upperControlOut;
 }
 
 

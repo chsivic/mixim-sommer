@@ -58,7 +58,8 @@ class BaseWaveApplLayer : public BaseApplLayer {
 
 		enum WaveApplMessageKinds {
 			SERVICE_PROVIDER = LAST_BASE_APPL_MESSAGE_KIND,
-			SEND_BEACON_EVT
+			SEND_BEACON_EVT, 
+			LAST_BASE_WAVE_APPL_MESSAGE_KIND
 		};
 
 	protected:
@@ -70,7 +71,9 @@ class BaseWaveApplLayer : public BaseApplLayer {
 		/** @brief handle self messages */
 		virtual void handleSelfMsg(cMessage* msg);
 
-		virtual WaveShortMessage* prepareWSM(std::string name, int dataLengthBits, t_channel channel, int priority, int rcvId, int serial=0);
+		virtual WaveShortMessage* prepareWSM(std::string name, int dataLengthBits,
+            t_channel channel, int priority, int rcvId, int serial,
+            int kind = 0);
 		virtual void sendWSM(WaveShortMessage* wsm);
 		virtual void onBeacon(WaveShortMessage* wsm) = 0;
 		virtual void onData(WaveShortMessage* wsm) = 0;

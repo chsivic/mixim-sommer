@@ -125,9 +125,11 @@ enum ChannelNumber {
 	CRIT_SOL = 172,
 	SCH1 = 174,
 	SCH2 = 176,
+	SCH5 = 175, // Ch174+Ch176
 	CCH = 178,
 	SCH3 = 180,
 	SCH4 = 182,
+	SCH6 =181,  // Ch180+Ch182
 	HPPS = 184
 };
 }
