@@ -43,6 +43,16 @@ class MIXIM_API Decider80211x: public Decider80211MultiChannel
 
         void channelChanged(int newChannel);
 
+
+        virtual Mapping* calculateRSSIMapping(  simtime_t_cref start,
+                                                simtime_t_cref end,
+                                                AirFrame*      exclude = NULL);
+
 };
+
+
+
+
+
 
 #endif /* DECIDER80211x_H_ */
