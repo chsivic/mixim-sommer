@@ -71,6 +71,8 @@ void SiChenWaveApplLayer::initialize(int stage) {
         receivedDataNo = 0;
         receivedData_last = 0;
 
+        recordingInterval = par("recordingInterval").doubleValue();
+        lastRecordingTIme = 0;
         receivedDataVecRecord.setName("receivedDataCount");
         receivedBeaconVecRecord.setName("receivedBeaconCount");
         receivedSCHAnnounceBeaconsVecRecord.setName("received SCH announcements");
@@ -95,7 +97,7 @@ void SiChenWaveApplLayer::initialize(int stage) {
 
         myIndex = findHost()->getIndex();
         iAmFrontCar = (myIndex == 0);
-        rearCarId = myId + 12; //TODO fix rcvId to car id collected from beacons
+        rearCarId = myId + 1; //TODO fix rcvId to car id collected from beacons
 
         if (iAmFrontCar) {
             announceSCHEvt = new cMessage("SCH announcement",
@@ -485,7 +487,8 @@ void SiChenWaveApplLayer::receiveSignal(cComponent* source,
             }
         }
 
-        if ( true ) { // or fmod(simTime(), 1) < 0.1
+        if ( simTime() - lastRecordingTIme >= recordingInterval ) {
+            lastRecordingTIme = simTime();
             //do statistics
             receivedBeaconVecRecord.record(
                     receivedBeacons - receivedBeacons_last);
@@ -532,22 +535,8 @@ void SiChenWaveApplLayer::receiveSignal(cComponent* source,
 
 void SiChenWaveApplLayer::selectNextSchNumberGivenThisMeasure(double measure) {
     int channelNumber;
-    //        channSelector.lastSCHChannelBusyTime50ms = d; // in ms
-    //        myNextSCH = channSelector.getNextSCH( myCurrentSCH,
-    //                1- channSelector.lastSCHChannelBusyTime50ms
-    //                        / SWITCHING_INTERVAL_11P);
-    //        channSelector.printChannelRecords();
-
-
-
-//    channelNumber = d > 0.1 ? (rand() % 10 + 1) : this->myCurrentSCH; //TODO replace with channel selector
-//    channelNumber = myCurrentSCH % 10 + 1;
-
     channelNumber = channSelector.getNextSCH(myCurrentSCH, measure, ChannSelector::CHANNEL_BUSY_RATIO);
-
-
     setCurrentSCH(channelNumber);
-
     myWifi2450ChannelVecRecord.record(myMacWifi2450->getChannel());
 }
 

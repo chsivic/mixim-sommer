@@ -50,10 +50,11 @@ module Car_tvws
         }
 
         netwlDsrc: SiChenWaveNetwLayer {
+            parameters:
+                @display("p=58,119;i=block/layer,lightGreen");
 
-            @display("p=58,119;i=block/layer,lightGreen");
         }
-        nicDsrc: Nic80211p {
+        nicDsrc: SiChenNic80211p {
             parameters:
                 @display("p=58,202;i=block/ifcard,dodgerBlue");
                 phy.nbRadioChannels = default(184); // from 172 to 184
@@ -65,6 +66,7 @@ module Car_tvws
                 @display("p=134,202");
                 macType = "org.mixim.modules.mac.Mac80211MultiChannelWithSignals";
                 phyType = "org.mixim.modules.phy.PhyLayerWithSignals";
+                mac.bitrate = 1Mbps;
         }
         netwl2450: <networkType> like IBaseNetwLayer {
             parameters:

@@ -41,6 +41,7 @@ simple SiChenWaveApplLayer extends BaseWaveApplLayer
         string dbFileName = default("db/channelValueDB_trip0");
         
         bool enableRealSniffingData = default(false);
+        double recordingInterval @unit(s) = default(1s);
         
     gates:
         

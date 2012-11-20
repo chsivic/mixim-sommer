@@ -70,33 +70,32 @@ void PhyLayerWithSignals::handleAirFrame(AirFrame* frame) {
     // get the receiving power of the Signal at start-time and center frequency
     Signal& signal = frame->getSignal();
 
-    if (frame->getState() == END_RECEIVE){
+    if (this->debug && frame->getState() == END_RECEIVE){
         reportRcvPower(frame);
     }
 
     //measure communication density
-    if (frame->getState() == START_RECEIVE)
-    {
-        if ( this->isKnownProtocolId(frame->getProtocolId()) )
-                myKnownProtocolBusyTime += signal.getDuration().dbl();
-
+    if (frame->getState() == START_RECEIVE) {
+        if (this->isKnownProtocolId(frame->getProtocolId()))
+            myKnownProtocolBusyTime += signal.getDuration().dbl();
 
         myBusyTime += signal.getDuration().dbl();
         emit(busyTimeSignalId, signal.getDuration().dbl());
-    }
-    else {
+    } else {
         //------print the mappings----------------------
         ev << "[Host " << myIndex
                 << "] - PhyLayerWithSignals::handleAirFrame state:"
-                << frame->getState() << "isKnownProtocolId:"
+                << frame->getState() << ", isKnownProtocolId:"
                 << isKnownProtocolId(frame->getProtocolId()) << endl;
-        dynamic_cast<Decider80211x*>(decider)->printMapping(
-                frame->getSignal().getReceivingPower());
+        if (debug)
+            dynamic_cast<Decider80211x*>(decider)->printMapping(
+                    frame->getSignal().getReceivingPower());
     }
 
     PhyLayer::handleAirFrame(frame);
 }
 
+/* print out receiving power of a frame */
 void PhyLayerWithSignals::reportRcvPower(AirFrame* frame){
 
     Signal& signal = frame->getSignal();
@@ -109,7 +108,7 @@ void PhyLayerWithSignals::reportRcvPower(AirFrame* frame){
     double recvPower = signal.getReceivingPower()->getValue(start);
     emit(rcvPowerSignalId, 10*log10(recvPower));
     EV<<"rcvPower = "<<recvPower<<" ("<<10*log10(recvPower)<<" dB)"<<endl;
-//    std::cout << "rcvPower = "<<recvPower<<" ("<<10*log10(recvPower)<<" dB)"<<endl;
+
 }
 
 Decider* PhyLayerWithSignals::getDeciderFromName(std::string name, ParameterMap& params) {
@@ -147,7 +146,7 @@ Decider* PhyLayerWithSignals::initializeDecider80211x(ParameterMap& params) {
 
     Decider80211x* dec = new Decider80211x(this, threshold, sensitivity,
             radio->getCurrentChannel(),
-            findHost()->getIndex(), coreDebug);
+            findHost()->getIndex(), debug);
 
     return dec;
 }
@@ -155,7 +154,7 @@ Decider* PhyLayerWithSignals::initializeDecider80211x(ParameterMap& params) {
 Decider* PhyLayerWithSignals::initializeDecider80211p(ParameterMap& params) {
 //    double centerFreq = params["centerFrequency"];
     Decider80211p* dec = new Decider80211p(this, sensitivity, this->radio->getCurrentChannel(),
-            findHost()->getIndex(), coreDebug);
+            findHost()->getIndex(), debug);
     dec->setPath(getParentModule()->getFullPath());
     return dec;
 }
