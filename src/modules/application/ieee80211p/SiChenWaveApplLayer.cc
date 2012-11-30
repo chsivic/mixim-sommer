@@ -57,6 +57,8 @@ void SiChenWaveApplLayer::initialize(int stage) {
         //
         findHost()->subscribe(SCHChannelBusyTime50msSignal, this);
 
+        receivedWifi2450InterferPkts = 0;
+        receivedWifi2450InterferPktsVecRecord.setName("receivedWifi2450InterferPktsVecRecord");
         receivedWifi2450Pkts = 0;
         receivedWifi2450PktsVecRecord.setName("receivedWifi2450Pkts");
         lostWifi2450Pkts = 0;
@@ -96,7 +98,7 @@ void SiChenWaveApplLayer::initialize(int stage) {
 //        }
 
         myIndex = findHost()->getIndex();
-        iAmFrontCar = (myIndex == 0);
+        iAmFrontCar = par("iAmFrontCar").boolValue();
         rearCarId = myId + 1; //TODO fix rcvId to car id collected from beacons
 
         if (iAmFrontCar) {
@@ -124,7 +126,7 @@ void SiChenWaveApplLayer::initialize(int stage) {
         }
     } else if (stage == 1) {
 
-        setCurrentSCH(1);
+        setCurrentSCH(par("initSCH").longValue());
 
     }
 }
@@ -276,6 +278,12 @@ void SiChenWaveApplLayer::onData(WaveShortMessage* wsm) {
         receivedWifi2450Pkts++;
 
         WaveAppEV <<"receivedWifi2450Pkts=" << receivedWifi2450Pkts << endl;
+    } else {
+        WaveAppEV
+                << "Received a DSRC " << wsm->getClassName()
+                        << " from SrcAddr " << wsm->getSenderAddress()
+                        << " of size " << wsm->getBitLength() << "." << ""
+                        << endl;
     }
 
     if (recipientId == myId) {
@@ -450,6 +458,8 @@ void SiChenWaveApplLayer::handleLowerMsg(cMessage* msg) {
         WaveShortMessage* wsm = dynamic_cast<WaveShortMessage*>(msg);
         if (wsm != NULL) {
             onData(wsm);
+        } else {
+            receivedWifi2450InterferPkts++;
         }
 
     }
@@ -522,11 +532,18 @@ void SiChenWaveApplLayer::receiveSignal(cComponent* source,
                 selectNextSchNumberGivenThisMeasure(channBusyRatio*10);
             }
 
+            receivedWifi2450InterferPktsVecRecord.record(receivedWifi2450InterferPkts);
+            receivedWifi2450InterferPkts = 0;
             receivedWifi2450PktsVecRecord.record(receivedWifi2450Pkts);
             receivedWifi2450Pkts = 0;
             lostWifi2450PktsVecRecord.record(lostWifi2450Pkts);
             lostWifi2450Pkts = 0;
         }
+
+        if (iAmFrontCar && fmod((simTime().dbl()), 5) <0.05) {
+            this->channSelector.updateChannelValueDB(simTime().dbl(),5);
+        }
+
     } else if (signalID == pktLostSignal) {
         WaveAppEV << "pktLostSignal received." << endl;
         lostWifi2450Pkts++;

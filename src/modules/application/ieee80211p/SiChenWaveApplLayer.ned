@@ -28,11 +28,13 @@ simple SiChenWaveApplLayer extends BaseWaveApplLayer
         beaconInterval = 0.1s;
         dataLengthBits = 1024bit; // this is set to stress the system, creating packet loss, just for debugging purpose
         						  // AND packet drop.  8192 is too long for the designed backoff parameters
+        bool iAmFrontCar = default(false);
         bool sendRelayMsg = default(true); // starting from front car, relay message to following car
         double relayMsgInterval @unit(s) = default(0.01s);
         int relayMsgLengthBits @unit(bit) = default(1024bit);
         bool dataOnIsm = default(true); 
         
+        int initSCH=default(1);
         int lowestSCH = default(172);
         int highestSCH = default(182);
         string channelSelectionMode = default("none");// none, random, learning

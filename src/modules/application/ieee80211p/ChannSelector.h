@@ -97,6 +97,7 @@ public:
             float epsilon, float alpha, string dbFileName, bool debug);
 
     void updateChannelValueDB(Coord old, Coord cur);
+    void updateChannelValueDB(double time, int step);
 
     /* called at the beginning of every CCH interval*/
     int getNextSCH(int currentSCH, double measure, MEASURE_TYPE type);

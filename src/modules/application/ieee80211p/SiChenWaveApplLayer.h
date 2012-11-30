@@ -85,13 +85,13 @@ protected:
     uint32_t receivedSCHAnnounceBeacons, receivedSCHAnnounceBeacons_last;
     uint32_t sentSCHAnnounceBeacons, sentSCHAnnounceBeacons_last;
     uint32_t receivedDataNo, receivedData_last;
-    int receivedWifi2450Pkts, lostWifi2450Pkts;
+    int receivedWifi2450Pkts, lostWifi2450Pkts, receivedWifi2450InterferPkts;
     double recordingInterval; //interval to write to cOutVector
     simtime_t lastRecordingTIme;
     cOutVector receivedDataVecRecord;
     cOutVector receivedBeaconVecRecord;
     cOutVector receivedSCHAnnounceBeaconsVecRecord, sentSCHAnnounceBeaconsVecRecord;
-    cOutVector receivedWifi2450PktsVecRecord, lostWifi2450PktsVecRecord;
+    cOutVector receivedWifi2450PktsVecRecord, lostWifi2450PktsVecRecord, receivedWifi2450InterferPktsVecRecord;
     cOutVector myWifi2450ChannelVecRecord;
     cOutVector myCurrentSCHVecRecord;
     static const simsignalwrap_t pktLostSignal;

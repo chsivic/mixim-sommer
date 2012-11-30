@@ -47,12 +47,12 @@ void ChannSelector::initialize(int lowestSCH, int highestSCH,
         fileName = fileName.substr(0, fileName.find("trip") + 4); //channelValueDB_trip
         dbFile.open(inFileName.c_str());
         if (dbFile) {
-            std::cout << "Load channel value from file " << inFileName
+            std::cout << "[debug] Load channel values from file " << inFileName
                     << " (TripNo:" << currentTripNo << ")" << endl;
-            for (int loc = 0; loc < 40; ++loc) {
+            for (int time = 0; time < 40; ++time) {
                 for (int ch = 0; ch < 10; ++ch) {
-//                    dbFile >> channelValueDB[loc][ch];
-                    channelValueDB[loc][ch]=1;
+                    dbFile >> channelValueDB[time][ch]; // TODO: implement 2D database.
+//                    channelValueDB[loc][ch]=1;
                 }
             }
         } else {
@@ -106,9 +106,20 @@ void ChannSelector::updateChannelValueDB(Coord old, Coord cur){
 
         //TODO: consider channel visit times.
     }
+}
+void ChannSelector::updateChannelValueDB(double time, int step){
+    int index=int(time/step);
+    std::cout<<"[debug]"<<" Time="<<time<<", index="<<index<<endl;
+    for (unsigned int ch = 0; ch < this->channelVector.size(); ++ch) {
 
+        this->channelValueDB[index][ch] =
+                channelRecords[channelVector[ch]].channelValue;
 
+        channelRecords[channelVector[ch]].channelValue =
+                this->channelValueDB[index+1][ch];
 
+        std::cout<<"[debug]"<<this->channelValueDB[index][ch]<< " -> " <<  this->channelValueDB[index+1][ch] << endl;
+    }
 }
 
 /** Convert channel measurement (such as channel busy time, total packets, total bytes)
@@ -223,7 +234,7 @@ void ChannSelector::finish(void){
             std::cerr << "Error: file could not be opened" << endl;
             exit(1);
         } else {
-            std::cout << "Saved channel value to file "<<outFileName<<endl;
+            std::cout << "[ debug ] Saved channel values for next trip to file "<<outFileName<<endl;
         }
         for (int loc = 0; loc < 40; ++loc) {
             for (int ch = 0; ch < 10; ++ch)
