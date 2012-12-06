@@ -27,7 +27,7 @@
 const simsignalwrap_t SiChenWaveApplLayer::pktLostSignal = simsignalwrap_t(
         "packetLoss");
 const simsignalwrap_t SiChenWaveApplLayer::SCHChannelBusyTime50msSignal =
-        simsignalwrap_t("SCHChannelBusyTime50ms"); //sent from MAC layer (SiChenMac!609_4 line 69)
+        simsignalwrap_t("SCHChannelBusyTime50ms"); //sent from MAC layer (SiChenMac1609_4 line 69)
 
 Define_Module(SiChenWaveApplLayer);
 
@@ -74,7 +74,7 @@ void SiChenWaveApplLayer::initialize(int stage) {
         receivedData_last = 0;
 
         recordingInterval = par("recordingInterval").doubleValue();
-        lastRecordingTIme = 0;
+        lastRecordingTime = 0;
         receivedDataVecRecord.setName("receivedDataCount");
         receivedBeaconVecRecord.setName("receivedBeaconCount");
         receivedSCHAnnounceBeaconsVecRecord.setName("received SCH announcements");
@@ -85,8 +85,9 @@ void SiChenWaveApplLayer::initialize(int stage) {
                 par("channelSelectionMode").stringValue(),
                 par("explorationRate_epsilon").doubleValue(),
                 par("learningRate_alpha").doubleValue(),
-                par("dbFileName").str(),
-                true);
+                par("dbFileNamePrefix").str(),par("TripNo").longValue(),
+                debug);
+        dbUpdateInterval = par("dbUpdateInterval").longValue();
 
 //        /** Initialize database */
 //        if (par("enableRealSniffingData").boolValue()) {
@@ -325,7 +326,7 @@ void SiChenWaveApplLayer::onData(WaveShortMessage* wsm) {
         << "Got msg sent to id=" << recipientId << ", myId is" << myId << endl;
     }
 
-    delete wsm;
+//    delete wsm;
 }
 
 void SiChenWaveApplLayer::onWifi2450Data(cMessage* msg) {
@@ -434,13 +435,13 @@ void SiChenWaveApplLayer::handleLowerMsg(cMessage* msg) {
                 break;
             case BEACON_REPLY:
             case RELAY_MSG:
-                WaveAppEV<<"obslete RELAY_MSG msg kind" << endl;
+                WaveAppEV<<"Obsolete RELAY_MSG msg kind" << endl;
                 break;
             case SCH_MSG:
                 onData(wsm);
                 break;
             case SWITCH_CHANN_BEACON_REPLY:
-                WaveAppEV<<"obslete SWITCH_CHANN_BEACON_REPLY msg kind" << endl;
+                WaveAppEV<<"Obsolete SWITCH_CHANN_BEACON_REPLY msg kind" << endl;
                 break;
             default:
                 opp_error("Unknown received wsm type: %d", wsm->getKind());
@@ -450,8 +451,7 @@ void SiChenWaveApplLayer::handleLowerMsg(cMessage* msg) {
             DBG << "unknown message received\n";
         }
 
-        /* This is app layer already, always discard old msg. if relay, make another new msg*/
-        delete (wsm);
+
 
     } else { // maybe a 2450 wifi msg
         ASSERT(msg->getArrivalGateId() == this->lowerLayer2450In);
@@ -463,7 +463,8 @@ void SiChenWaveApplLayer::handleLowerMsg(cMessage* msg) {
         }
 
     }
-
+    /* This is app layer already, always discard old msg. if relay, make another new msg*/
+    delete (msg);
 }
 
 SiChenWaveApplLayer::~SiChenWaveApplLayer() {
@@ -497,8 +498,8 @@ void SiChenWaveApplLayer::receiveSignal(cComponent* source,
             }
         }
 
-        if ( simTime() - lastRecordingTIme >= recordingInterval ) {
-            lastRecordingTIme = simTime();
+        if ( simTime() - lastRecordingTime >= recordingInterval ) {
+            lastRecordingTime = simTime();
             //do statistics
             receivedBeaconVecRecord.record(
                     receivedBeacons - receivedBeacons_last);
@@ -514,24 +515,6 @@ void SiChenWaveApplLayer::receiveSignal(cComponent* source,
             receivedSCHAnnounceBeacons_last = receivedSCHAnnounceBeacons;
             sentSCHAnnounceBeacons_last = sentSCHAnnounceBeacons;
 
-            if (iAmFrontCar) {// then measure channel busy time and select next channel
-
-//                if (db!=0)
-//                {
-//                    int time_in_second = floor(simTime().dbl());
-//                    char buffer[100];
-//                    sprintf(buffer, "SELECT * FROM data_for_simulation WHERE TIME=%d", time_in_second);
-//                    db->query(buffer);
-//                }
-
-                double normalized_pkts_count = double(receivedWifi2450Pkts) / double(100.0);
-                double channBusyRatio=0;
-//                for (int i = 0; i <= 9; i++)
-//                    channBusyRatio += CrossLayerInfo.SCHBusyTime[i];
-                channBusyRatio = CrossLayerInfo.SCHBusyTime[0];
-                selectNextSchNumberGivenThisMeasure(channBusyRatio*10);
-            }
-
             receivedWifi2450InterferPktsVecRecord.record(receivedWifi2450InterferPkts);
             receivedWifi2450InterferPkts = 0;
             receivedWifi2450PktsVecRecord.record(receivedWifi2450Pkts);
@@ -540,8 +523,16 @@ void SiChenWaveApplLayer::receiveSignal(cComponent* source,
             lostWifi2450Pkts = 0;
         }
 
-        if (iAmFrontCar && fmod((simTime().dbl()), 5) <0.05) {
-            this->channSelector.updateChannelValueDB(simTime().dbl(),5);
+        if (simTime()-this->lastChannelSwitchingTime >= channelSwitchingInterval) {
+            if (iAmFrontCar) {// then measure channel busy time and select next channel
+                double channBusyRatio=0;
+                channBusyRatio = CrossLayerInfo.SCHBusyTime[0];
+                setNextSchNumberGivenThisMeasure(channBusyRatio/0.05);
+            }
+        }
+
+        if (iAmFrontCar && fmod((simTime().dbl()), dbUpdateInterval ) <0.05) {
+            this->channSelector.updateChannelValueDB(simTime().dbl(),dbUpdateInterval);
         }
 
     } else if (signalID == pktLostSignal) {
@@ -550,7 +541,7 @@ void SiChenWaveApplLayer::receiveSignal(cComponent* source,
     }
 }
 
-void SiChenWaveApplLayer::selectNextSchNumberGivenThisMeasure(double measure) {
+void SiChenWaveApplLayer::setNextSchNumberGivenThisMeasure(double measure) {
     int channelNumber;
     channelNumber = channSelector.getNextSCH(myCurrentSCH, measure, ChannSelector::CHANNEL_BUSY_RATIO);
     setCurrentSCH(channelNumber);
@@ -563,12 +554,14 @@ void SiChenWaveApplLayer::receiveSignal(cComponent *source,
     if (signalID == SCHChannelBusyTime50msSignal) { //every 100ms when switching to CCH
         int idx = int(floor(simTime().dbl()/0.1)) % 10;
         CrossLayerInfo.SCHBusyTime[0] = d;
+        WaveAppEV<< "SCHChannelBusyTime50msSignal received. SCHChannelBusyTime50ms = " <<d<<endl;
     }
 }
 
 void SiChenWaveApplLayer::finish() {
     recordScalar("receivedBeacons", receivedBeacons);
     recordScalar("receivedData", receivedDataNo);
+    recordScalar("ChannelSwitchingTimes", channSelector.getChannelSwitchingTimes());
 
     this->channSelector.finish();
 }

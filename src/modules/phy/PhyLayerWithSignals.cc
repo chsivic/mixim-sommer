@@ -31,7 +31,6 @@ void PhyLayerWithSignals::initialize(int stage) {
         myStartTime = simTime().dbl();
         busyTimeSignalId= registerSignal("airFrameBusyTime");
         rcvPowerSignalId = registerSignal("receivingPower");
-        std::cout<<"airFrameBusyTime:  "<<busyTimeSignalId<<endl;
     }
 }
 
@@ -42,7 +41,7 @@ bool PhyLayerWithSignals::checkFreqOverlapping(AirFrame* frame)
     if (frame->getProtocolId() == 12123)
     {//20 MHz channel
 //        assert(frame->getChannel()==173 || frame->getChannel()==177 || frame->getChannel()==181);
-        return abs(this->radio->getCurrentChannel() - frame->getChannel())<3;
+        return abs(this->radio->getCurrentChannel() - frame->getChannel())<4;
     }
     else if (frame->getProtocolId() == 12124)//80211p
     {//10 MHz channel
@@ -57,42 +56,47 @@ bool PhyLayerWithSignals::checkFreqOverlapping(AirFrame* frame)
 }
 
 void PhyLayerWithSignals::handleAirFrame(AirFrame* frame) {
-    // do nothing on the frame if it's on non-overlapping frequency.
-    if (!checkFreqOverlapping(frame))
-    {
-        EV << "[Host " << myIndex << "] - PhyLayerWithSignals: "
+    if (frame->getState()==START_RECEIVE && !checkFreqOverlapping(frame))
+    {   // do nothing on the frame if it's on non-overlapping frequency.
+        debugEV << "[Host " << myIndex << "] - PhyLayerWithSignals: "
                 << "My radio channel is " << this->radio->getCurrentChannel()
                 << ", frame (protocolId "<<frame->getProtocolId()<<") on channel " << frame->getChannel()
                 << ". handleAirFrame return without doing anything. \n";
+        delete frame;
+        frame=0;
         return;
     }
 
-    // get the receiving power of the Signal at start-time and center frequency
-    Signal& signal = frame->getSignal();
+    {
+        if (debug && frame->getState() == END_RECEIVE) {
+            reportRcvPower(frame);
+        }
 
-    if (this->debug && frame->getState() == END_RECEIVE){
-        reportRcvPower(frame);
+        // get the receiving power of the Signal at start-time and center frequency
+        Signal& signal = frame->getSignal();
+
+        //measure communication density
+        if (frame->getState() == START_RECEIVE) {
+            if (this->isKnownProtocolId(frame->getProtocolId()))
+                myKnownProtocolBusyTime += signal.getDuration().dbl();
+
+            myBusyTime += signal.getDuration().dbl();
+            emit(busyTimeSignalId, signal.getDuration().dbl());
+        } else {
+            //------print the mappings----------------------
+            debugEV << "[Host " << myIndex
+                           << "] - PhyLayerWithSignals::handleAirFrame state:"
+                           << frame->getState() << ", isKnownProtocolId:"
+                           << isKnownProtocolId(frame->getProtocolId()) << endl;
+            if (debug)
+                dynamic_cast<Decider80211x*>(decider)->printMapping(
+                        frame->getSignal().getReceivingPower());
+        }
+
+        PhyLayer::handleAirFrame(frame);
     }
 
-    //measure communication density
-    if (frame->getState() == START_RECEIVE) {
-        if (this->isKnownProtocolId(frame->getProtocolId()))
-            myKnownProtocolBusyTime += signal.getDuration().dbl();
 
-        myBusyTime += signal.getDuration().dbl();
-        emit(busyTimeSignalId, signal.getDuration().dbl());
-    } else {
-        //------print the mappings----------------------
-        ev << "[Host " << myIndex
-                << "] - PhyLayerWithSignals::handleAirFrame state:"
-                << frame->getState() << ", isKnownProtocolId:"
-                << isKnownProtocolId(frame->getProtocolId()) << endl;
-        if (debug)
-            dynamic_cast<Decider80211x*>(decider)->printMapping(
-                    frame->getSignal().getReceivingPower());
-    }
-
-    PhyLayer::handleAirFrame(frame);
 }
 
 /* print out receiving power of a frame */
@@ -107,7 +111,7 @@ void PhyLayerWithSignals::reportRcvPower(AirFrame* frame){
 
     double recvPower = signal.getReceivingPower()->getValue(start);
     emit(rcvPowerSignalId, 10*log10(recvPower));
-    EV<<"rcvPower = "<<recvPower<<" ("<<10*log10(recvPower)<<" dB)"<<endl;
+    debugEV<<"rcvPower = "<<recvPower<<" ("<<10*log10(recvPower)<<" dB)"<<endl;
 
 }
 

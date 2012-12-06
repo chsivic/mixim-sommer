@@ -24,7 +24,6 @@ void Mac80211MultiChannelWithSignals::initialize(int stage){
 
     if(stage == 0) {
         pktLostSignalId= registerSignal("packetLoss");
-        std::cout<<"packetLoss:  "<<pktLostSignalId<<endl;
     }
 }
 

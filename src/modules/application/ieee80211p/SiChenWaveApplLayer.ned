@@ -38,9 +38,12 @@ simple SiChenWaveApplLayer extends BaseWaveApplLayer
         int lowestSCH = default(172);
         int highestSCH = default(182);
         string channelSelectionMode = default("none");// none, random, learning
+        double channelSwitchingInterval @unit(s) = default(0.1s);
         double explorationRate_epsilon = default(0.1);
         double learningRate_alpha = default(0.3);
-        string dbFileName = default("db/channelValueDB_trip0");
+        int TripNo = default(0);
+        string dbFileNamePrefix = default("db/channelValueDB_trip");
+        int dbUpdateInterval = default(1); //second
         
         bool enableRealSniffingData = default(false);
         double recordingInterval @unit(s) = default(1s);

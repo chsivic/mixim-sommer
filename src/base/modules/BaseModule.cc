@@ -46,7 +46,7 @@ void BaseModule::initialize(int stage) {
     if (stage == 0) {
     	notAffectedByHostState = 	hasPar("notAffectedByHostState")
 								 && par("notAffectedByHostState").boolValue();
-        hasPar("debug") ? debug = par("debug").boolValue() : debug = true;
+        hasPar("debug") ? debug = par("debug").boolValue() : debug = false;
         findHost()->subscribe(catHostStateSignal, this);
     }
 }

@@ -87,7 +87,9 @@ protected:
     uint32_t receivedDataNo, receivedData_last;
     int receivedWifi2450Pkts, lostWifi2450Pkts, receivedWifi2450InterferPkts;
     double recordingInterval; //interval to write to cOutVector
-    simtime_t lastRecordingTIme;
+    simtime_t lastRecordingTime;
+    double channelSwitchingInterval; // How often to make channel selection
+    simtime_t lastChannelSwitchingTime;
     cOutVector receivedDataVecRecord;
     cOutVector receivedBeaconVecRecord;
     cOutVector receivedSCHAnnounceBeaconsVecRecord, sentSCHAnnounceBeaconsVecRecord;
@@ -109,11 +111,12 @@ protected:
     virtual void handleSelfMsg(cMessage *msg);
     virtual void handleLowerControl(cMessage *msg);
     virtual void handleLowerMsg(cMessage *msg);
-    void selectNextSchNumberGivenThisMeasure(double d);
+    void setNextSchNumberGivenThisMeasure(double d);
     void announceSchNo(int);
 
 protected:
     ChannSelector channSelector;
+    int dbUpdateInterval;
 //    SqliteAccess *db;
 
     struct CrossLayerInfo {

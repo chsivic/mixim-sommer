@@ -79,9 +79,12 @@ protected:
 
     int lastExploitationSCH;
 
-    double channelValueDB[40][10];
+    double channelValueDB[100][10];
     std::string fileName;
     int currentTripNo;
+
+    //statistics
+    int channelSwitchingTimes;
 
 public:
     ChannSelector();
@@ -94,7 +97,7 @@ public:
     };
 
     void initialize(int lowestSCH, int highestSCH, string channelSelectionMode,
-            float epsilon, float alpha, string dbFileName, bool debug);
+            float epsilon, float alpha, string dbFileNamePrefix, int startingTripNo,bool debug);
 
     void updateChannelValueDB(Coord old, Coord cur);
     void updateChannelValueDB(double time, int step);
@@ -103,7 +106,7 @@ public:
     int getNextSCH(int currentSCH, double measure, MEASURE_TYPE type);
 
 
-
+    int getChannelSwitchingTimes(){return channelSwitchingTimes;}
 
     void printChannelRecords(void);
 

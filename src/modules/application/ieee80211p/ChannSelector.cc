@@ -29,7 +29,7 @@ ChannSelector::ChannSelector() {
 }
 
 void ChannSelector::initialize(int lowestSCH, int highestSCH,
-        string channelSelectionMode, float epsilon, float alpha, string dbFileName, bool debug) {
+        string channelSelectionMode, float epsilon, float alpha, string dbFileNamePrefix, int TripNo, bool debug) {
 
     this->debug = debug;
     this->channelSelectionMode = channelSelectionMode;
@@ -37,28 +37,33 @@ void ChannSelector::initialize(int lowestSCH, int highestSCH,
     /** Initialize channelValue database from file*/
     if (channelSelectionMode == "learning") {
         std::ifstream dbFile;
-        fileName = dbFileName;
+        char buffer[10];
+
+        fileName = dbFileNamePrefix;
         fileName.erase(fileName.begin());
         fileName.erase(fileName.find('"'));
-        currentTripNo = atoi(
-                fileName.substr(this->fileName.find("trip") + 4).c_str());
+        currentTripNo = TripNo;
 
-        std::string inFileName = fileName + ".txt"; //channelValueDB_trip0.txt
-        fileName = fileName.substr(0, fileName.find("trip") + 4); //channelValueDB_trip
+        sprintf(buffer, "%d", currentTripNo);
+        std::string inFileName = fileName + buffer + ".txt"; //channelValueDB_trip0.txt
+
         dbFile.open(inFileName.c_str());
         if (dbFile) {
             std::cout << "[debug] Load channel values from file " << inFileName
                     << " (TripNo:" << currentTripNo << ")" << endl;
-            for (int time = 0; time < 40; ++time) {
+            for (int time = 0; time < 100; ++time) {
                 for (int ch = 0; ch < 10; ++ch) {
                     dbFile >> channelValueDB[time][ch]; // TODO: implement 2D database.
-//                    channelValueDB[loc][ch]=1;
                 }
             }
         } else {
-            std::cerr << "Cannot open file " << inFileName
-                    << " to read channel values" << endl;
-            exit(1);
+            std::cout << "[debug] Cannot open file " << inFileName
+                    << " to read channel values. Initializing with all ones." << endl;
+            for (int time = 0; time < 100; ++time) {
+                for (int ch = 0; ch < 10; ++ch) {
+                    channelValueDB[time][ch]=1;
+                }
+            }
         }
         dbFile.close();
     } else if (channelSelectionMode == "random") {
@@ -92,6 +97,7 @@ void ChannSelector::initialize(int lowestSCH, int highestSCH,
     lastExploitationSCH = bestChannelNo;
     bestChannelValue = channelRecords[bestChannelNo].channelValue;
 
+    channelSwitchingTimes =0 ;
 }
 
 /** Update channelvalueDB (long term memory) with channelRecords (short term memory) */
@@ -109,7 +115,7 @@ void ChannSelector::updateChannelValueDB(Coord old, Coord cur){
 }
 void ChannSelector::updateChannelValueDB(double time, int step){
     int index=int(time/step);
-    std::cout<<"[debug]"<<" Time="<<time<<", index="<<index<<endl;
+    std::cout<<"[debug]"<<" Time="<<time<<", db index="<<index<<endl;
     for (unsigned int ch = 0; ch < this->channelVector.size(); ++ch) {
 
         this->channelValueDB[index][ch] =
@@ -117,9 +123,12 @@ void ChannSelector::updateChannelValueDB(double time, int step){
 
         channelRecords[channelVector[ch]].channelValue =
                 this->channelValueDB[index+1][ch];
-
-        std::cout<<"[debug]"<<this->channelValueDB[index][ch]<< " -> " <<  this->channelValueDB[index+1][ch] << endl;
     }
+
+    if (debug)
+        for (unsigned int ch = 0; ch < this->channelVector.size(); ++ch)
+            std::cout << "[debug]" << this->channelValueDB[index][ch] << " -> "
+                    << this->channelValueDB[index + 1][ch] << endl;
 }
 
 /** Convert channel measurement (such as channel busy time, total packets, total bytes)
@@ -173,6 +182,9 @@ int ChannSelector::getNextSCH(int currentSCH, double measure, MEASURE_TYPE type)
         if (channelSelectionMode == "learning")
             this->printChannelRecords();
     }
+
+    if (myNextSCH != currentSCH)
+        channelSwitchingTimes++;
 
     return myNextSCH;
 }
@@ -234,9 +246,9 @@ void ChannSelector::finish(void){
             std::cerr << "Error: file could not be opened" << endl;
             exit(1);
         } else {
-            std::cout << "[ debug ] Saved channel values for next trip to file "<<outFileName<<endl;
+            std::cout << "[debug] Saved channel values for next trip to file "<<outFileName<<endl;
         }
-        for (int loc = 0; loc < 40; ++loc) {
+        for (int loc = 0; loc < 100; ++loc) {
             for (int ch = 0; ch < 10; ++ch)
                 dbFile << channelValueDB[loc][ch] << " ";
             dbFile << endl;
