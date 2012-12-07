@@ -41,7 +41,7 @@ bool PhyLayerWithSignals::checkFreqOverlapping(AirFrame* frame)
     if (frame->getProtocolId() == 12123)
     {//20 MHz channel
 //        assert(frame->getChannel()==173 || frame->getChannel()==177 || frame->getChannel()==181);
-        return abs(this->radio->getCurrentChannel() - frame->getChannel())<4;
+        return abs(this->radio->getCurrentChannel() - frame->getChannel())<3;
     }
     else if (frame->getProtocolId() == 12124)//80211p
     {//10 MHz channel
@@ -81,7 +81,7 @@ void PhyLayerWithSignals::handleAirFrame(AirFrame* frame) {
                 myKnownProtocolBusyTime += signal.getDuration().dbl();
 
             myBusyTime += signal.getDuration().dbl();
-            emit(busyTimeSignalId, signal.getDuration().dbl());
+            emit(busyTimeSignalId, signal.getDuration().dbl());// for cross-layer information of channel busy time count
         } else {
             //------print the mappings----------------------
             debugEV << "[Host " << myIndex

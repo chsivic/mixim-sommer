@@ -25,6 +25,8 @@ simple SiChenWaveApplLayer extends BaseWaveApplLayer
 {
     parameters:
         @class(SiChenWaveApplLayer);
+        @statistic[channBusyRatio](source=channBusyRatio; record=max,vector);
+        
         beaconInterval = 0.1s;
         dataLengthBits = 1024bit; // this is set to stress the system, creating packet loss, just for debugging purpose
         						  // AND packet drop.  8192 is too long for the designed backoff parameters

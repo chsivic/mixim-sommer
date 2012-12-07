@@ -40,10 +40,10 @@ void SiChenWaveApplLayer::initialize(int stage) {
         lowerControl2450In = findGate("lowerControl2450In");
         lowerControl2450Out = findGate("lowerControl2450Out");
 
-        myMacWifi2450 = FindModule<Mac80211MultiChannel*>::findSubModule(
+        myMacWifi2450 = FindModule<Mac80211MultiChannelWithSignals*>::findSubModule(
                 findHost());
         if (!myMacWifi2450) {
-            opp_error("Could not find Mac80211MultiChannel.");
+            opp_error("Could not find Mac80211MultiChannelWithSignals.");
         }
         myWifi2450ChannelVecRecord.setName("myWifi2450Channel");
         myCurrentSCHVecRecord.setName("myCurrentSCH number");
@@ -79,15 +79,12 @@ void SiChenWaveApplLayer::initialize(int stage) {
         receivedBeaconVecRecord.setName("receivedBeaconCount");
         receivedSCHAnnounceBeaconsVecRecord.setName("received SCH announcements");
         sentSCHAnnounceBeaconsVecRecord.setName("sent SCH Announcements");
+        channBusyRatioSignalId = registerSignal("channBusyRatio");
 
-        /** Initialize channel selector */
-        channSelector.initialize(int(par("lowestSCH")), int(par("highestSCH")),
-                par("channelSelectionMode").stringValue(),
-                par("explorationRate_epsilon").doubleValue(),
-                par("learningRate_alpha").doubleValue(),
-                par("dbFileNamePrefix").str(),par("TripNo").longValue(),
-                debug);
-        dbUpdateInterval = par("dbUpdateInterval").longValue();
+        channelSwitchingInterval=par("channelSwitchingInterval").doubleValue();
+        lastChannelSwitchingTime=0;
+
+
 
 //        /** Initialize database */
 //        if (par("enableRealSniffingData").boolValue()) {
@@ -106,6 +103,16 @@ void SiChenWaveApplLayer::initialize(int stage) {
             announceSCHEvt = new cMessage("SCH announcement",
                     ANNOUNCE_SCH_EVT);
             scheduleAt(simTime() + 25e-3, announceSCHEvt);
+
+            /** Initialize channel selector */
+            channSelector = new ChannSelector;
+            channSelector->initialize(int(par("lowestSCH")), int(par("highestSCH")),
+                    par("channelSelectionMode").stringValue(),
+                    par("explorationRate_epsilon").doubleValue(),
+                    par("learningRate_alpha").doubleValue(),
+                    par("dbFileNamePrefix").str(),par("TripNo").longValue(),
+                    debug);
+            dbUpdateInterval = par("dbUpdateInterval").longValue();
         }
 
         sendRelayMsg = par("sendRelayMsg").boolValue();
@@ -523,16 +530,20 @@ void SiChenWaveApplLayer::receiveSignal(cComponent* source,
             lostWifi2450Pkts = 0;
         }
 
-        if (simTime()-this->lastChannelSwitchingTime >= channelSwitchingInterval) {
+        if (simTime().dbl()-lastChannelSwitchingTime.dbl() >= channelSwitchingInterval) {
             if (iAmFrontCar) {// then measure channel busy time and select next channel
                 double channBusyRatio=0;
-                channBusyRatio = CrossLayerInfo.SCHBusyTime[0];
-                setNextSchNumberGivenThisMeasure(channBusyRatio/0.05);
+//                channBusyRatio = CrossLayerInfo.SCHBusyTime[0]; :TODO: don't use inter-layer signal for channel statistics query from app layer
+                channBusyRatio = this->myMacWifi2450->getChannelBusyTime()
+                        / (simTime() - this->lastChannelSwitchingTime);
+                setNextSchNumberGivenThisMeasure(channBusyRatio);
+                emit(channBusyRatioSignalId, channBusyRatio);
+                this->lastChannelSwitchingTime=simTime();
             }
         }
 
         if (iAmFrontCar && fmod((simTime().dbl()), dbUpdateInterval ) <0.05) {
-            this->channSelector.updateChannelValueDB(simTime().dbl(),dbUpdateInterval);
+            this->channSelector->updateChannelValueDB(simTime().dbl(),dbUpdateInterval);
         }
 
     } else if (signalID == pktLostSignal) {
@@ -543,7 +554,7 @@ void SiChenWaveApplLayer::receiveSignal(cComponent* source,
 
 void SiChenWaveApplLayer::setNextSchNumberGivenThisMeasure(double measure) {
     int channelNumber;
-    channelNumber = channSelector.getNextSCH(myCurrentSCH, measure, ChannSelector::CHANNEL_BUSY_RATIO);
+    channelNumber = channSelector->getNextSCH(myCurrentSCH, measure, ChannSelector::CHANNEL_BUSY_RATIO);
     setCurrentSCH(channelNumber);
     myWifi2450ChannelVecRecord.record(myMacWifi2450->getChannel());
 }
@@ -559,9 +570,11 @@ void SiChenWaveApplLayer::receiveSignal(cComponent *source,
 }
 
 void SiChenWaveApplLayer::finish() {
+    if(iAmFrontCar) channSelector->finish();
+
     recordScalar("receivedBeacons", receivedBeacons);
     recordScalar("receivedData", receivedDataNo);
-    recordScalar("ChannelSwitchingTimes", channSelector.getChannelSwitchingTimes());
+    recordScalar("ChannelSwitchingTimes", channSelector->getChannelSwitchingTimes());
 
-    this->channSelector.finish();
+
 }

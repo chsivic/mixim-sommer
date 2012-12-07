@@ -37,19 +37,19 @@ void ChannSelector::initialize(int lowestSCH, int highestSCH,
     /** Initialize channelValue database from file*/
     if (channelSelectionMode == "learning") {
         std::ifstream dbFile;
-        char buffer[10];
+
 
         fileName = dbFileNamePrefix;
         fileName.erase(fileName.begin());
         fileName.erase(fileName.find('"'));
         currentTripNo = TripNo;
 
-        sprintf(buffer, "%d", currentTripNo);
-        std::string inFileName = fileName + buffer + ".txt"; //channelValueDB_trip0.txt
+        stringstream inFileName;
+        inFileName<<fileName<<currentTripNo<<".txt";
 
-        dbFile.open(inFileName.c_str());
+        dbFile.open(inFileName.str().c_str());
         if (dbFile) {
-            std::cout << "[debug] Load channel values from file " << inFileName
+            std::cout << "[debug] Load channel values from file " << inFileName.str()
                     << " (TripNo:" << currentTripNo << ")" << endl;
             for (int time = 0; time < 100; ++time) {
                 for (int ch = 0; ch < 10; ++ch) {
@@ -57,7 +57,7 @@ void ChannSelector::initialize(int lowestSCH, int highestSCH,
                 }
             }
         } else {
-            std::cout << "[debug] Cannot open file " << inFileName
+            std::cout << "[debug] Cannot open file " << inFileName.str()
                     << " to read channel values. Initializing with all ones." << endl;
             for (int time = 0; time < 100; ++time) {
                 for (int ch = 0; ch < 10; ++ch) {
@@ -236,17 +236,14 @@ void ChannSelector::printChannelRecords(){
 void ChannSelector::finish(void){
     if (channelSelectionMode == "learning"){
         std::ofstream dbFile;
-
-        char buffer[10];
-
-        sprintf(buffer, "%d", currentTripNo + 1);
-        std::string outFileName = fileName + buffer + ".txt";
-        dbFile.open(outFileName.c_str());
+        stringstream outFileName;
+        outFileName<<fileName<<currentTripNo+1<<".txt";
+        dbFile.open(outFileName.str().c_str());
         if (!dbFile) { // file couldn't be opened
             std::cerr << "Error: file could not be opened" << endl;
             exit(1);
         } else {
-            std::cout << "[debug] Saved channel values for next trip to file "<<outFileName<<endl;
+            std::cout << "[debug] Saved channel values for next trip to file "<<outFileName.str()<<endl;
         }
         for (int loc = 0; loc < 100; ++loc) {
             for (int ch = 0; ch < 10; ++ch)

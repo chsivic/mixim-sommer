@@ -24,7 +24,7 @@
 #include "BaseModule.h"
 #include <BaseWaveApplLayer.h>
 #include "mobility/traci/TraCIMobility.h"
-#include "Mac80211MultiChannel.h"
+#include "Mac80211MultiChannelWithSignals.h"
 
 #include "ChannSelector.h"
 //#include "SqliteAccess.h"
@@ -63,7 +63,7 @@ protected:
     int lowerLayer2450Out;
     int lowerControl2450In;
     int lowerControl2450Out;
-    Mac80211MultiChannel *myMacWifi2450;
+    Mac80211MultiChannelWithSignals *myMacWifi2450;
     bool enableDsrcSCH;
     bool enableWifiSCH;
     int myCurrentSCH;
@@ -96,6 +96,7 @@ protected:
     cOutVector receivedWifi2450PktsVecRecord, lostWifi2450PktsVecRecord, receivedWifi2450InterferPktsVecRecord;
     cOutVector myWifi2450ChannelVecRecord;
     cOutVector myCurrentSCHVecRecord;
+    simsignal_t channBusyRatioSignalId;
     static const simsignalwrap_t pktLostSignal;
     static const simsignalwrap_t SCHChannelBusyTime50msSignal;
     void setCurrentSCH(int myCurrentSCH);
@@ -115,7 +116,7 @@ protected:
     void announceSchNo(int);
 
 protected:
-    ChannSelector channSelector;
+    ChannSelector* channSelector;
     int dbUpdateInterval;
 //    SqliteAccess *db;
 

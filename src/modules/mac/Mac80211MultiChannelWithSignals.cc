@@ -16,6 +16,9 @@
 #include "Mac80211MultiChannelWithSignals.h"
 #include "Decider80211.h"
 
+const simsignalwrap_t Mac80211MultiChannelWithSignals::busyTimeSignalId = simsignalwrap_t(
+        "airFrameBusyTime"); //subscribe, emitted from phylayerwithsignal
+
 Define_Module(Mac80211MultiChannelWithSignals);
 
 void Mac80211MultiChannelWithSignals::initialize(int stage){
@@ -24,13 +27,24 @@ void Mac80211MultiChannelWithSignals::initialize(int stage){
 
     if(stage == 0) {
         pktLostSignalId= registerSignal("packetLoss");
+
+        /** subscribe to signal emitted from dsrc phy layer*/
+        findHost()->subscribe(busyTimeSignalId, this);
+        channelBusyTime=0;
     }
 }
 
+void Mac80211MultiChannelWithSignals::receiveSignal(cComponent* source,
+        simsignal_t signalID, double d) {
+    Enter_Method_Silent();
+    if (signalID == busyTimeSignalId) {
+        this->channelBusyTime+=d;
+    }
+}
 
-    /** @brief Handle messages from lower layer
-     * Override from Mac80211 by adding:
-     * - signaling pkt collision*/
+/** @brief Handle messages from lower layer
+ * Override from Mac80211 by adding:
+ * - signaling pkt collision*/
 void Mac80211MultiChannelWithSignals::handleLowerControl(cMessage* msg){
     switch (msg->getKind()) {
     case Decider80211::COLLISION:

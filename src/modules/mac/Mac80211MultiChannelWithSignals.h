@@ -23,17 +23,23 @@ protected:
     /* this signal indicates pkt loss due to either collision or weak signal*/
     simsignal_t pktLostSignalId;
 
+    static const simsignalwrap_t busyTimeSignalId;
+    double channelBusyTime;
+
 
 protected:
     virtual void initialize(int stage);
+
+    void receiveSignal(cComponent* source, simsignal_t signalID, double d);
 
     /** @brief Handle messages from lower layer
      * Override from Mac80211 by adding:
      * - signaling pkt collision*/
     virtual void handleLowerControl(cMessage*);
 
-public:
 
+public:
+    double getChannelBusyTime(void){double ret=channelBusyTime; channelBusyTime=0; return ret;};
 };
 
 #endif /* MAC80211MULTICHANNELWITHSIGNALS_H_ */
