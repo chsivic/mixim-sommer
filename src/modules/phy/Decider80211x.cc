@@ -20,7 +20,7 @@
 
 #include <cassert>
 
-#include "Decider80211MultiChannel.h"
+#include "Decider80211.h"
 #include <Decider80211x.h>
 #include <DeciderResult80211.h>
 #include <Mac80211Pkt_m.h>
@@ -34,8 +34,8 @@
 /** Constructor using channel number, setting current channel*/
 Decider80211x::Decider80211x(DeciderToPhyInterface* phy, double threshold,
         double sensitivity, int channel, int myIndex, bool debug) :
-        Decider80211MultiChannel(phy, threshold, sensitivity, 0, channel,
-                myIndex, debug) {
+        Decider80211(phy, threshold, sensitivity, channel, myIndex, debug),
+        currentChannel(channel){
 }
 
 void Decider80211x::channelChanged(int newChannel) {
@@ -44,6 +44,7 @@ void Decider80211x::channelChanged(int newChannel) {
     centerFrequency = CENTER_FREQUENCIES[currentChannel];
     channelStateChanged();
 }
+
 
 /**
  * @brief Calculates a RSSI-Mapping (or Noise-Strength-Mapping) for a
@@ -62,7 +63,7 @@ Mapping* Decider80211x::calculateRSSIMapping(simtime_t_cref start,
 
     //    // Si Chen added for debugging
     bool print_frames = false;
-    if (debug && airFrames.size() > 2) {
+    if (debug && airFrames.size() > 0) {
         print_frames = true;
         deciderEV << airFrames.size() << " air frames: " << endl;
     }

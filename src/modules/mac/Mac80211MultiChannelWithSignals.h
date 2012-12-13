@@ -24,7 +24,7 @@ protected:
     simsignal_t pktLostSignalId;
 
     static const simsignalwrap_t busyTimeSignalId;
-    double channelBusyTime;
+    double channelBusyTime, nextFrameDuration;
 
 
 protected:
@@ -36,6 +36,8 @@ protected:
      * Override from Mac80211 by adding:
      * - signaling pkt collision*/
     virtual void handleLowerControl(cMessage*);
+
+    void handleLowerMsg(cMessage*);
 
 
 public:

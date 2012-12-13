@@ -74,6 +74,7 @@ protected:
 
     bool sendRelayMsg;
     double relayMsgInterval;
+    simtime_t next_relay_msg_time;
     int relayMsgLengthBits;
     std::string relayMsgName;
     int currentRelayMsgSerial;
@@ -85,18 +86,19 @@ protected:
     uint32_t receivedSCHAnnounceBeacons, receivedSCHAnnounceBeacons_last;
     uint32_t sentSCHAnnounceBeacons, sentSCHAnnounceBeacons_last;
     uint32_t receivedDataNo, receivedData_last;
-    int receivedWifi2450Pkts, lostWifi2450Pkts, receivedWifi2450InterferPkts;
+    int receivedWifi2450Pkts, lostWifi2450Pkts;
+    int receivedWifi2450InterferPkts, receivedWifi2450InterferPkts_last_record, receivedWifi2450InterferPkts_last_measure;
     double recordingInterval; //interval to write to cOutVector
     simtime_t lastRecordingTime;
     double channelSwitchingInterval; // How often to make channel selection
-    simtime_t lastChannelSwitchingTime;
+    simtime_t lastChannelSwitchingTime; //floored to integer second
     cOutVector receivedDataVecRecord;
     cOutVector receivedBeaconVecRecord;
     cOutVector receivedSCHAnnounceBeaconsVecRecord, sentSCHAnnounceBeaconsVecRecord;
     cOutVector receivedWifi2450PktsVecRecord, lostWifi2450PktsVecRecord, receivedWifi2450InterferPktsVecRecord;
     cOutVector myWifi2450ChannelVecRecord;
     cOutVector myCurrentSCHVecRecord;
-    simsignal_t channBusyRatioSignalId;
+    simsignal_t channBusyRatioSignalId, sentDataSignalId, dataDelaySignalId;
     static const simsignalwrap_t pktLostSignal;
     static const simsignalwrap_t SCHChannelBusyTime50msSignal;
     void setCurrentSCH(int myCurrentSCH);
@@ -105,14 +107,13 @@ protected:
     void sendDelayedDownToChannel(cMessage*, simtime_t_cref, SiChenWaveApplLayerChannelKinds);
     virtual void onBeacon(WaveShortMessage *wsm);
     virtual void onData(WaveShortMessage *wsm);
-    virtual void onWifi2450Data(cMessage *msg);
     virtual void receiveSignal(cComponent *source, simsignal_t signalID, cObject *obj);
     virtual void receiveSignal(cComponent *source, simsignal_t signalID, double d);
     virtual void handleMessage(cMessage*);
     virtual void handleSelfMsg(cMessage *msg);
     virtual void handleLowerControl(cMessage *msg);
     virtual void handleLowerMsg(cMessage *msg);
-    void setNextSchNumberGivenThisMeasure(double d);
+    void setNextSchNumberGivenThisMeasure(double d, ChannSelector::MEASURE_TYPE type);
     void announceSchNo(int);
 
 protected:

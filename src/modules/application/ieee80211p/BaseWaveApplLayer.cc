@@ -26,9 +26,9 @@ void BaseWaveApplLayer::initialize(int stage) {
 	BaseApplLayer::initialize(stage);
 
 	if (stage==0) {
-		myMac = FindModule<WaveAppToMac1609_4Interface*>::findSubModule(
+		myWaveMac = FindModule<WaveAppToMac1609_4Interface*>::findSubModule(
 		            getParentModule());
-		assert(myMac);
+		assert(myWaveMac);
 
 		myId = getParentModule()->getIndex();
 

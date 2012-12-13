@@ -138,7 +138,7 @@ double ChannSelector::calculateInstantReward(double measure, MEASURE_TYPE type){
     double instantReward;
     switch (type){
     case TOTAL_PKTS:
-        instantReward = max<double>(0.0, 300 - measure)/300.0;
+        instantReward = max<double>(0.0, 30 - measure)/30.0;
         break;
     case CHANNEL_BUSY_RATIO:
         instantReward = measure > (double)1 ? (double)0 : (double)1 - measure;

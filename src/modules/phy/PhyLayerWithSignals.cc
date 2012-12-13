@@ -25,11 +25,12 @@ void PhyLayerWithSignals::initialize(int stage) {
     PhyLayer::initialize(stage);
 
     if(stage == 0) {
+        debug = par("debug").boolValue();
         myIndex = findHost()->getIndex();
         myBusyTime = 0;
         myKnownProtocolBusyTime = 0;
         myStartTime = simTime().dbl();
-        busyTimeSignalId= registerSignal("airFrameBusyTime");
+        busyTimeSignalId = registerSignal("airFrameBusyTime");
         rcvPowerSignalId = registerSignal("receivingPower");
     }
 }
@@ -95,8 +96,6 @@ void PhyLayerWithSignals::handleAirFrame(AirFrame* frame) {
 
         PhyLayer::handleAirFrame(frame);
     }
-
-
 }
 
 /* print out receiving power of a frame */

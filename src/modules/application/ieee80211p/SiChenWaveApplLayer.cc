@@ -57,8 +57,11 @@ void SiChenWaveApplLayer::initialize(int stage) {
         //
         findHost()->subscribe(SCHChannelBusyTime50msSignal, this);
 
-        receivedWifi2450InterferPkts = 0;
+        receivedWifi2450InterferPkts_last_measure =
+                receivedWifi2450InterferPkts_last_record =
+                        receivedWifi2450InterferPkts = 0;
         receivedWifi2450InterferPktsVecRecord.setName("receivedWifi2450InterferPktsVecRecord");
+
         receivedWifi2450Pkts = 0;
         receivedWifi2450PktsVecRecord.setName("receivedWifi2450Pkts");
         lostWifi2450Pkts = 0;
@@ -68,10 +71,9 @@ void SiChenWaveApplLayer::initialize(int stage) {
         receivedBeacons_last = 0;
         receivedSCHAnnounceBeacons = 0;
         receivedSCHAnnounceBeacons_last = 0;
-        sentSCHAnnounceBeacons = 0;
-        sentSCHAnnounceBeacons_last = 0;
-        receivedDataNo = 0;
-        receivedData_last = 0;
+        sentSCHAnnounceBeacons_last = sentSCHAnnounceBeacons = 0;
+        receivedData_last = receivedDataNo = 0;
+
 
         recordingInterval = par("recordingInterval").doubleValue();
         lastRecordingTime = 0;
@@ -79,7 +81,10 @@ void SiChenWaveApplLayer::initialize(int stage) {
         receivedBeaconVecRecord.setName("receivedBeaconCount");
         receivedSCHAnnounceBeaconsVecRecord.setName("received SCH announcements");
         sentSCHAnnounceBeaconsVecRecord.setName("sent SCH Announcements");
+
         channBusyRatioSignalId = registerSignal("channBusyRatio");
+        sentDataSignalId = registerSignal("sentData");
+        dataDelaySignalId = registerSignal("dataDelay");
 
         channelSwitchingInterval=par("channelSwitchingInterval").doubleValue();
         lastChannelSwitchingTime=0;
@@ -145,7 +150,7 @@ void SiChenWaveApplLayer::setCurrentSCH(int ch) {
     if (ch > 14) {
         enableDsrcSCH = true;
         enableWifiSCH = false;
-        myMac->changeServiceChannel(ch); //wave channels
+        myWaveMac->changeServiceChannel(ch); //wave channels
     } else {
         enableDsrcSCH = false;
         enableWifiSCH = true;
@@ -190,6 +195,7 @@ void SiChenWaveApplLayer::sendWSM(WaveShortMessage* wsm) {
 }
 
 void SiChenWaveApplLayer::sendIpPacket(cPacket *pkt) {
+    emit(sentDataSignalId,double(pkt->getBitLength()));
     assert(pkt->getKind()!=CCH_MSG);
     //CCH should not use IP, but use WSMP
     sendDelayedDownToChannel(pkt, uniform(100e-6, 200e-6),
@@ -213,7 +219,7 @@ void SiChenWaveApplLayer::sendDelayedDownToChannel(cMessage* msg,
         sendDelayed(msg, delay, lowerLayerOut); //send msg via DSRC NIC
         break;
     case WIFI_CHANNEL:
-        sendDelayed(msg, delay, lowerLayer2450Out); //send msg via DSRC NIC
+        sendDelayed(msg, delay, lowerLayer2450Out); //send msg via 2450 NIC
         break;
     case TVWS_CHANNEL:
     default:
@@ -232,13 +238,8 @@ void SiChenWaveApplLayer::onBeacon(WaveShortMessage* wsm) {
                         << simTime() << ". receivedBeacons= " << receivedBeacons
                         << std::endl;
 
-        if (sendData) {
-            t_channel channelForData = dataOnSch ? type_SCH : type_CCH;
-            sendWSM(
-                    prepareWSM("data", dataLengthBits, channelForData,
-                            dataPriority, wsm->getSenderAddress(), 2,
-                            BEACON_REPLY));
-        }
+        assert(sendData==false);//sendData from BaseWaveAppLayer for replying data on received beacons. I don't use it
+
         break;
     case SWITCH_CHANN_BEACON: //receive SWITCH_CHANN_BEACON from other nodes
         receivedSCHAnnounceBeacons++;
@@ -299,11 +300,14 @@ void SiChenWaveApplLayer::onData(WaveShortMessage* wsm) {
                 << "Received data priority  " << wsm->getPriority() << " at "
                         << simTime() << ". receivedDataNo= " << receivedDataNo
                         << std::endl;
+        emit(dataDelaySignalId, simTime()-wsm->getTimestamp());
 
         switch (wsm->getKind()) {
 
         case SCH_MSG: // received a relay message from other cars
             receivedDataNo++;
+
+
 
             // if the "sequential relay" app is on, forward what I received after 5ms
             if (sendRelayMsg) {
@@ -336,11 +340,7 @@ void SiChenWaveApplLayer::onData(WaveShortMessage* wsm) {
 //    delete wsm;
 }
 
-void SiChenWaveApplLayer::onWifi2450Data(cMessage* msg) {
 
-    assert(false);
-
-}
 
 /** @brief direct different msg from different gates to handle*Msg */
 void SiChenWaveApplLayer::handleMessage(cMessage* msg) {
@@ -407,7 +407,16 @@ void SiChenWaveApplLayer::handleSelfMsg(cMessage* msg) {
 
         newWsm->setWsmData("**");
         sendIpPacket(newWsm);
-        scheduleAt(simTime() + relayMsgInterval, sendRelayMsgEvt); //schedule when the NEXT msg flow starts
+
+
+        if( fmod(simTime() + relayMsgInterval, channelSwitchingInterval)<(channelSwitchingInterval-0.05) )
+            next_relay_msg_time = simTime() + relayMsgInterval;
+        else
+            next_relay_msg_time = ceil(simTime()/channelSwitchingInterval)*channelSwitchingInterval + 0.05;
+
+//        cout<<"simTime()="<<simTime()<<",next_relay_msg_time="<<next_relay_msg_time<<endl;
+        scheduleAt(next_relay_msg_time, sendRelayMsgEvt); //schedule when the NEXT msg flow starts
+
 
         break;
 
@@ -522,8 +531,9 @@ void SiChenWaveApplLayer::receiveSignal(cComponent* source,
             receivedSCHAnnounceBeacons_last = receivedSCHAnnounceBeacons;
             sentSCHAnnounceBeacons_last = sentSCHAnnounceBeacons;
 
-            receivedWifi2450InterferPktsVecRecord.record(receivedWifi2450InterferPkts);
-            receivedWifi2450InterferPkts = 0;
+            receivedWifi2450InterferPktsVecRecord.record(receivedWifi2450InterferPkts-receivedWifi2450InterferPkts_last_record);
+            receivedWifi2450InterferPkts_last_record=receivedWifi2450InterferPkts;
+
             receivedWifi2450PktsVecRecord.record(receivedWifi2450Pkts);
             receivedWifi2450Pkts = 0;
             lostWifi2450PktsVecRecord.record(lostWifi2450Pkts);
@@ -536,8 +546,9 @@ void SiChenWaveApplLayer::receiveSignal(cComponent* source,
 //                channBusyRatio = CrossLayerInfo.SCHBusyTime[0]; :TODO: don't use inter-layer signal for channel statistics query from app layer
                 channBusyRatio = this->myMacWifi2450->getChannelBusyTime()
                         / (simTime() - this->lastChannelSwitchingTime);
-                setNextSchNumberGivenThisMeasure(channBusyRatio);
                 emit(channBusyRatioSignalId, channBusyRatio);
+                setNextSchNumberGivenThisMeasure(channBusyRatio, ChannSelector::CHANNEL_BUSY_RATIO);
+
                 this->lastChannelSwitchingTime=simTime();
             }
         }
@@ -552,10 +563,11 @@ void SiChenWaveApplLayer::receiveSignal(cComponent* source,
     }
 }
 
-void SiChenWaveApplLayer::setNextSchNumberGivenThisMeasure(double measure) {
+void SiChenWaveApplLayer::setNextSchNumberGivenThisMeasure(double measure, ChannSelector::MEASURE_TYPE type) {
     int channelNumber;
-    channelNumber = channSelector->getNextSCH(myCurrentSCH, measure, ChannSelector::CHANNEL_BUSY_RATIO);
+    channelNumber = channSelector->getNextSCH(myCurrentSCH, measure, type);
     setCurrentSCH(channelNumber);
+//    cout<<"simTime()="<<simTime()<<", lastChannelSwitchingTime="<<lastChannelSwitchingTime<<", channelNumber="<<channelNumber<<endl;
     myWifi2450ChannelVecRecord.record(myMacWifi2450->getChannel());
 }
 
@@ -570,11 +582,14 @@ void SiChenWaveApplLayer::receiveSignal(cComponent *source,
 }
 
 void SiChenWaveApplLayer::finish() {
-    if(iAmFrontCar) channSelector->finish();
+    if(iAmFrontCar){
+        channSelector->finish();
+        recordScalar("ChannelSwitchingTimes", channSelector->getChannelSwitchingTimes());
+    }
 
     recordScalar("receivedBeacons", receivedBeacons);
     recordScalar("receivedData", receivedDataNo);
-    recordScalar("ChannelSwitchingTimes", channSelector->getChannelSwitchingTimes());
+
 
 
 }

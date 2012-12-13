@@ -25,17 +25,26 @@ simple SiChenWaveApplLayer extends BaseWaveApplLayer
 {
     parameters:
         @class(SiChenWaveApplLayer);
-        @statistic[channBusyRatio](source=channBusyRatio; record=max,vector);
+        @statistic[channBusyRatio](source=channBusyRatio; record=stats,vector);
+        @statistic[sentData](source=sentData; record=vector);
+        @statistic[dataDelay](source=dataDelay; record=vector,stats);
         
+        // Beacons configuration
         beaconInterval = 0.1s;
+        
+        // Beacon reply configuration
+        sendData=false;
         dataLengthBits = 1024bit; // this is set to stress the system, creating packet loss, just for debugging purpose
         						  // AND packet drop.  8192 is too long for the designed backoff parameters
+        				
+		// Relay message configuration
         bool iAmFrontCar = default(false);
         bool sendRelayMsg = default(true); // starting from front car, relay message to following car
-        double relayMsgInterval @unit(s) = default(0.01s);
+        double relayMsgInterval @unit(s) = default(0.02s);
         int relayMsgLengthBits @unit(bit) = default(1024bit);
-        bool dataOnIsm = default(true); 
+//        bool dataOnIsm = default(true); 
         
+        // Dynamic channel selection configuration
         int initSCH=default(1);
         int lowestSCH = default(172);
         int highestSCH = default(182);
@@ -43,11 +52,13 @@ simple SiChenWaveApplLayer extends BaseWaveApplLayer
         double channelSwitchingInterval @unit(s) = default(0.1s);
         double explorationRate_epsilon = default(0.1);
         double learningRate_alpha = default(0.3);
+        
+        // Long-term channel learning configuration
         int TripNo = default(0);
         string dbFileNamePrefix = default("db/channelValueDB_trip");
         int dbUpdateInterval = default(1); //second
         
-        bool enableRealSniffingData = default(false);
+		// vector recording configuration
         double recordingInterval @unit(s) = default(1s);
         
     gates:

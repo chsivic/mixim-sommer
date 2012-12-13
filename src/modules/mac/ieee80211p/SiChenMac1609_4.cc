@@ -36,7 +36,7 @@ void SiChenMac1609_4::initialize(int stage)
         busyTimeSumOnCCH_last_100ms = busyTimeSumOnCCH;
 
         /** subscribe to signal emitted from dsrc phy layer*/
-        findHost()->subscribe(busyTimeSignalId, this);
+        getParentModule()->subscribe(busyTimeSignalId, this);
 
         myCarIndex = getParentModule()->getParentModule()->getIndex();
 

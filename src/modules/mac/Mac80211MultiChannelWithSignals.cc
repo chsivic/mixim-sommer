@@ -31,6 +31,8 @@ void Mac80211MultiChannelWithSignals::initialize(int stage){
         /** subscribe to signal emitted from dsrc phy layer*/
         findHost()->subscribe(busyTimeSignalId, this);
         channelBusyTime=0;
+
+        this->myMacAddr+=9000;
     }
 }
 
@@ -39,6 +41,7 @@ void Mac80211MultiChannelWithSignals::receiveSignal(cComponent* source,
     Enter_Method_Silent();
     if (signalID == busyTimeSignalId) {
         this->channelBusyTime+=d;
+        this->nextFrameDuration=d;
     }
 }
 
@@ -58,4 +61,14 @@ void Mac80211MultiChannelWithSignals::handleLowerControl(cMessage* msg){
         break;
     }
     Mac80211::handleLowerControl(msg);
+}
+
+void Mac80211MultiChannelWithSignals::handleLowerMsg(cMessage* msg){
+    Mac80211Pkt *af = static_cast<Mac80211Pkt *>(msg);
+    if(af->getSrcAddr() >9000)
+    {
+        this->channelBusyTime-=this->nextFrameDuration;
+    }
+
+    Mac80211MultiChannel::handleLowerMsg(msg);
 }

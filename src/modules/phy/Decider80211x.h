@@ -12,12 +12,10 @@
 /**
  * downstream with small tweaks
  */
-class MIXIM_API Decider80211x: public Decider80211MultiChannel
+class MIXIM_API Decider80211x: public Decider80211
 {
-    public:
-
     protected:
-
+        int currentChannel;
 
 
     public:
@@ -42,7 +40,6 @@ class MIXIM_API Decider80211x: public Decider80211MultiChannel
         }
 
         void channelChanged(int newChannel);
-
 
         virtual Mapping* calculateRSSIMapping(  simtime_t_cref start,
                                                 simtime_t_cref end,

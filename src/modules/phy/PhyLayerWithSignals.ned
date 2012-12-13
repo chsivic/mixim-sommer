@@ -29,6 +29,8 @@ import org.mixim.modules.phy.PhyLayer;
 simple PhyLayerWithSignals extends PhyLayer
 {
     parameters:
+        bool debug   = default(false); //debug switch for derived modules outside core framework
+        
         @class(PhyLayerWithSignals);
         headerLength @unit(bit)  = default(46 bit); //defines the length of the phy header (SIGNAL without PREAMBLE)
         
@@ -37,6 +39,10 @@ simple PhyLayerWithSignals extends PhyLayer
 
 		@signal[receivingPower](type="double");
 		@statistic[receivingPower](source=receivingPower; record=vector);
+		
+		
+		@signal[airFrameBusyTime](type="double");
+		@statistic[airFrameBusyTime](source=airFrameBusyTime; record=vector);
         
         thermalNoise @unit(dBm) = default(-110dBm);
 }

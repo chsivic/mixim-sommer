@@ -95,7 +95,7 @@ class BaseWaveApplLayer : public BaseApplLayer {
 
 		cMessage* sendBeaconEvt;
 
-		WaveAppToMac1609_4Interface* myMac;
+		WaveAppToMac1609_4Interface* myWaveMac;
 };
 
 #endif /* BASEWAVEAPPLLAYER_H_ */
